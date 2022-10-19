@@ -1,47 +1,33 @@
 
-
-
-
 SELECT * FROM TpBdd2Origen.sys.all_columns;
 SELECT * FROM TpBdd2Origen.sys.all_objects;
 SELECT * FROM TpBdd2Origen.sys.objects;
 SELECT * FROM TpBdd2Origen.sys.schemas;
 SELECT * FROM TpBdd2Origen.sys.system_columns;
 
-
 SELECT * FROM TpBdd2Origen.sys.tables;
 SELECT * FROM Personas;
-SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Personas';
+INSERT INTO Personas (Nombre,Apellido) VALUES ('Ezequiel','Sanson'),('Nahuel','Saavedra'),('Joel','Misterio'),('Keko','Incognita'),('Alexis','Quiensabe');
+
+
+-- COMO OBTENER LA CANTIDAD DE TABLAS QUE TIENE LA BDD
+DECLARE @cantidadTablas int;
+SET @cantidadTablas = (SELECT COUNT(*) FROM TpBdd2Origen.sys.tables);
+SELECT @cantidadTablas as CantidadTablas;
+
+-- COMO OBTENER EL NOMBRE DE LAS TABLAS DE UNA BDD
+DECLARE @nombreTabla varchar(50);
+SET @nombreTabla = (SELECT name FROM TpBdd2Origen.sys.tables WHERE ??);
+SELECT @nombreTabla as NombreTabla;
+
+
+-- COMO OBTENGO LA CANTIDAD DE COLUMNAS DE UNA TABLA
+DECLARE @cantidadColumnas int;
+SET @cantidadColumnas = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Personas');
+SELECT @cantidadColumnas as CantidadColumnas;
+
+-- COMO OBTENGO EL NOMBRE DE LOS CAMPOS DE UNA TABLA
+SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Personas';
 
 
 
-
---SELECT
---       (SELECT TOP 1
---           name
---      FROM TestDB2.sys.schemas WHERE
---           schema_id
---           =
---           D1O.schema_id) AS Schema_Name,
---       D1O.name AS Object_Name
---  FROM
---       TestDB2.sys.syscomments D1C
---       INNER JOIN TestDB2.sys.objects D1O
---       ON
---       D1O.object_id
---       =
---       D1C.id
---       INNER JOIN TestDB.sys.objects D2O
---       ON
---       D1O.name
---       =
---       D2O.name
---       INNER JOIN TestDB.sys.syscomments D2C
---       ON
---       D2O.object_id
---       =
---       D2C.id
---WHERE
---       D1C.text
---       <>
---       D2C.text;
