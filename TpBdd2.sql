@@ -31,3 +31,28 @@ SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Personas'
 
 
 
+
+-- ESTO GENERA UN CURSOR QUE RECORRE LA TABLA Y TE TRAE UNO POR UNO LOS RESULTADOS QUE LE PIDAS DE LA TABLA.
+DECLARE @elementoCursor VARCHAR(MAX), @cursorTipo VARCHAR(MAX);
+
+DECLARE contact_cursor CURSOR FOR SELECT Nombre FROM Personas;
+OPEN contact_cursor;   
+FETCH NEXT FROM contact_cursor INTO @elementoCursor; 
+-- el INTO le indica en donde quiero poner el resultado que trae el cursor. Tengo que poner la cantidad de variables segun lo que traiga en el SELECT donde declaro el cursor, en este caso una variable sola porque traigo solo el nombre.   
+WHILE @@FETCH_STATUS = 0 -- FETCH_STATUS => Devuelve 0 si esta recorriendo una tabla, devuelve -1 si ya termino.
+BEGIN
+	-- Aca puedo hacer cosas con los datos que dispongo en ese momento
+	select @elementoCursor as Elemento;
+   FETCH NEXT FROM contact_cursor INTO @elementoCursor;  
+END    
+CLOSE contact_cursor;  
+DEALLOCATE contact_cursor;  
+GO  
+
+-- Consulta dinamica
+DECLARE @sqlDinamico NVARCHAR(MAX);
+SET @sqlDinamico = 'SELECT Nombre FROM Personas';
+EXECUTE SP_EXECUTESQL @sqlDinamico;
+
+
+
