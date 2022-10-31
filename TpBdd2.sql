@@ -17,7 +17,7 @@ SELECT @cantidadTablas as CantidadTablas;
 
 -- COMO OBTENER EL NOMBRE DE LAS TABLAS DE UNA BDD
 DECLARE @nombreTabla varchar(50);
-SET @nombreTabla = (SELECT name FROM TpBdd2Origen.sys.tables WHERE ??);
+SET @nombreTabla = (SELECT name FROM BD_.sys.tables);
 SELECT @nombreTabla as NombreTabla;
 
 
@@ -111,7 +111,7 @@ GO
 
 INSERT INTO Test.Vehiculo (Modelo, Marca) VALUES ('Gol','VW'),('Onix','Chevrolet'),('208','Peugeot'),('Civic','Honda'),('Clio','Renault');
 GO
-INSERT INTO Test.Dueño (Nombre, Apellido) VALUES ('Ezequiel','Sanson',1),('Nahuel','Saavedra',2),('Joel','Misterio',3),('Keko','Incognita',4),('Alexis','Quiensabe',5);
+INSERT INTO Test.Dueño (Nombre, Apellido) VALUES ('Ezequiel','Sanson'),('Nahuel','Saavedra'),('Joel','Misterio'),('Keko','Incognita'),('Alexis','Quiensabe');
 GO
 
 USE DB_BaseDestino;
@@ -257,7 +257,9 @@ GO
 -----------------------		EJECUCION		-----------------------------------
 -------------------------------------------------------------------------------
 
-EXEC PROC sp_Compare 'DB_BaseOrigen', 'DB_BaseDestino';
+DECLARE @BaseOrigen VARCHAR(30)= 'DB_BaseOrigen';
+DECLARE @BaseDestino VARCHAR(30)= 'DB_BaseDestino';
+EXEC PROCEDURE sp_Compare @BaseOrigen , @BaseDestino;
 
 
 select * from sys.databases;
@@ -267,4 +269,5 @@ SELECT * FROM TpBdd2Origen.sys.tables;
 SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Vehiculo';
 
 SELECT * FROM DB_BaseDestino.INFORMATION_SCHEMA.COLUMNS;
+SELECT * FROM DB_BaseOrigen.INFORMATION_SCHEMA.COLUMNS;
 

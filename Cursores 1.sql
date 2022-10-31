@@ -12,6 +12,8 @@ DECLARE @BaseDestino VARCHAR(30)= 'DB_BaseDestino';
 			DECLARE @SqlDinamico2 NVARCHAR(MAX)
 			DECLARE @SqlDinamico3 NVARCHAR(MAX)
 			DECLARE @SqlDinamico4 NVARCHAR(MAX)
+			DECLARE @Borrar_Columna NVARCHAR(MAX)
+			DECLARE @Crear_Tabla NVARCHAR(MAX)
 
 SET @SqlDinamico = 'DECLARE Table_Cursor CURSOR FOR SELECT name FROM '+@BaseOrigen+'.sys.tables';
 			EXECUTE SP_EXECUTESQL @sqlDinamico;
@@ -40,37 +42,49 @@ SET @SqlDinamico = 'DECLARE Table_Cursor CURSOR FOR SELECT name FROM '+@BaseOrig
 												BEGIN
 													--Le agrego un if para que solo entre si estamos hablando de las columnas que de la tabla que estamos recorriendo
 													IF(@Nombre_Tabla = @Nombre_Tabla_Comp)
-														BEGIN
-																--Indico de que tabla estamos hablando
-																--SELECT @Nombre_Columna as ColumnaOrigen;
-																--Por cada columna de la tabla, recorro las columnas de la tabla con el mismo nombre en la base destino
-																SET @SqlDinamico4 = 'DECLARE Column_Cursor2 CURSOR FOR SELECT COLUMN_NAME,TABLE_NAME FROM '+@BaseDestino+'.INFORMATION_SCHEMA.COLUMNS';
-																EXECUTE SP_EXECUTESQL @sqlDinamico4;
-																OPEN Column_Cursor2;   
-																	FETCH NEXT FROM Column_Cursor2 INTO @Nombre_Columna2, @Nombre_Tabla_Comp2; 
-																	WHILE @@FETCH_STATUS = 0 
-																	BEGIN
-																		--Agrego el IF para que filtre solo las columnas de la tabla que estamos recorriendo inicialmente
-																		IF(@Nombre_Tabla = @Nombre_Tabla_Comp2)
-																			BEGIN
-																				--Agrego condicion para que haga algo si las columnas coinciden
-																				IF(@Nombre_Columna = @Nombre_Columna2)
-																					BEGIN
-																						SELECT 'COINCIDEN:',@Nombre_Columna2 as Columna_BD_Destino, @Nombre_Columna as Columna_BD_Origen;
-																						FETCH NEXT FROM Column_Cursor INTO @Nombre_Columna,@Nombre_Tabla_Comp;
-																						--Si tengo Coindicencia de tablas, ya no busco en el resto de registros(esto sirve por ahora, se puede modificar)
-																					END
-																				ELSE
-																					BEGIN
-																						SELECT 'NO COINCIDEN:',@Nombre_Columna2 as Columna_BD_Destino, @Nombre_Columna as Columna_BD_Origen;
-																					END
-																			END
-																		FETCH NEXT FROM Column_Cursor2 INTO @Nombre_Columna2,@Nombre_Tabla_Comp2;
-																	END
-																CLOSE Column_Cursor2;  
-																DEALLOCATE Column_Cursor2;
+													SELECT @Nombre_Tabla , @Nombre_Tabla_Comp;
+														--BEGIN
+														--		--Indico de que tabla estamos hablando
+														--		--SELECT @Nombre_Columna as ColumnaOrigen;
+														--		--Por cada columna de la tabla, recorro las columnas de la tabla con el mismo nombre en la base destino
+														--		SET @SqlDinamico4 = 'DECLARE Column_Cursor2 CURSOR FOR SELECT COLUMN_NAME,TABLE_NAME FROM '+@BaseDestino+'.INFORMATION_SCHEMA.COLUMNS';
+														--		EXECUTE SP_EXECUTESQL @sqlDinamico4;
+														--		OPEN Column_Cursor2;   
+														--			FETCH NEXT FROM Column_Cursor2 INTO @Nombre_Columna2, @Nombre_Tabla_Comp2; 
+														--			WHILE @@FETCH_STATUS = 0 
+														--			BEGIN
+														--				--Agrego el IF para que filtre solo las columnas de la tabla que estamos recorriendo inicialmente
+														--				IF(@Nombre_Tabla = @Nombre_Tabla_Comp2)
+														--					BEGIN
+														--						--Agrego condicion para que haga algo si las columnas coinciden
+														--						IF(@Nombre_Columna = @Nombre_Columna2)
+														--							BEGIN
+														--								SELECT 'COINCIDEN:',@Nombre_Columna2 as Columna_BD_Destino, @Nombre_Columna as Columna_BD_Origen;
+														--								--Si tengo Coindicencia de tablas, ya no busco en el resto de registros(esto sirve por ahora, se puede modificar)
+														--							END
+														--						ELSE
+														--							BEGIN
+														--								SELECT 'NO COINCIDEN:',@Nombre_Columna2 as Columna_BD_Destino, @Nombre_Columna as Columna_BD_Origen,@Nombre_Tabla2 as tabla;
+														--								SET @Borrar_Columna = 'ALTER TABLE ' + @BaseDestino + '.' + @Nombre_Tabla2 + ' DROP COLUMN ' + @Nombre_Columna2;
+														--								EXECUTE SP_EXECUTESQL @Borrar_Columna;
+														--							END
+														--							FETCH NEXT FROM Column_Cursor INTO @Nombre_Columna,@Nombre_Tabla_Comp;
+														--					END
+														--				FETCH NEXT FROM Column_Cursor2 INTO @Nombre_Columna2,@Nombre_Tabla_Comp2;
+														--			END
+														--		CLOSE Column_Cursor2;  
+														--		DEALLOCATE Column_Cursor2;
 
-														END
+														--END
+														ELSE 
+														--Tengo que crear esta tabla en la bd_destino
+																	USE DB_BaseDestino;
+														--CREATE TABLE Dueño AS SELECT * FROM DB_BaseOrigen.Dueño NO ENCUENTRO EL SCHEMA
+														--SELECT * INTO @Nombre_Tabla_Comp FROM [DB_BaseOrigen].Test.Dueño WHERE 1 = 0;
+														SET @Crear_Tabla = 'CREATE TABLE IF NOT EXISTS ' + @BaseOrigen + '.' + @Nombre_Tabla_Comp + ' AS SELECT * FROM ' + @BaseOrigen + '.' + @Nombre_Tabla_Comp;
+														SELECT @Crear_Tabla;
+														--EXECUTE SP_EXECUTESQL @Crear_Tabla;
+														--SELECT @Nombre_Tabla_Comp;
 													FETCH NEXT FROM Column_Cursor INTO @Nombre_Columna,@Nombre_Tabla_Comp;
 												END
 											CLOSE Column_Cursor;  
@@ -88,10 +102,14 @@ SET @SqlDinamico = 'DECLARE Table_Cursor CURSOR FOR SELECT name FROM '+@BaseOrig
 					END    
 			CLOSE Table_Cursor;  
 			DEALLOCATE Table_Cursor;
-	
-
-					
 
 
+			--ALTER TABLE DB_BaseDestino.Vehiculo DROP COLUMN año;
 
+			USE DB_BaseDestino;
+			--CREATE TABLE Dueño AS SELECT * FROM DB_BaseOrigen.Dueño
+			SELECT * INTO Dueño FROM [DB_BaseOrigen].Test.Dueño WHERE 1 = 0;
 
+			DECLARE @nombreTabla varchar(50);
+			SET @nombreTabla = (SELECT name FROM DB_BaseOrigen.sys.tables);
+			SELECT @nombreTabla as NombreTabla;
