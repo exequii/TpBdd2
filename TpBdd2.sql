@@ -111,7 +111,7 @@ GO
 
 INSERT INTO Test.Vehiculo (Modelo, Marca) VALUES ('Gol','VW'),('Onix','Chevrolet'),('208','Peugeot'),('Civic','Honda'),('Clio','Renault');
 GO
-INSERT INTO Test.Dueño (Nombre, Apellido) VALUES ('Ezequiel','Sanson',1),('Nahuel','Saavedra',2),('Joel','Misterio',3),('Keko','Incognita',4),('Alexis','Quiensabe',5);
+INSERT INTO Test.Dueño (Nombre, Apellido,AutoID) VALUES ('Ezequiel','Sanson',1),('Nahuel','Saavedra',2),('Joel','Misterio',3),('Keko','Incognita',4),('Alexis','Quiensabe',5);
 GO
 
 USE DB_BaseDestino;
@@ -257,12 +257,13 @@ GO
 -----------------------		EJECUCION		-----------------------------------
 -------------------------------------------------------------------------------
 
-EXEC PROC sp_Compare 'DB_BaseOrigen', 'DB_BaseDestino';
+--EXEC PROCEDURE sp_Compare 'DB_BaseOrigen', 'DB_BaseDestino';
 
 
 select * from sys.databases;
 
-SELECT * FROM TpBdd2Origen.sys.tables;
+SELECT * FROM DB_BaseDestino.sys.tables;
+SELECT * FROM DB_BaseOrigen.sys.tables;
 
 SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Vehiculo';
 
