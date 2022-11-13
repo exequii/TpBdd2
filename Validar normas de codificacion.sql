@@ -88,6 +88,20 @@ DECLARE @ValidarNombreUnique VARCHAR(500)
 				CLOSE Table_Cursor;  
 				DEALLOCATE Table_Cursor;
 
+-- Función que verifica si el nombre empieza con mayúscula y es singular
+
+CREATE FUNCTION f_Verificar_Notacion_Pascal(@Nombre VARCHAR (500))
+RETURNS VARCHAR(500)
+AS
+BEGIN
+DECLARE @Respuesta VARCHAR(500)
+IF SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS = UPPER(SUBSTRING(@Nombre, 1,1)) COLLATE SQL_Latin1_General_CP1_CS_AS AND SUBSTRING(@Nombre, LEN(@Nombre), 1) NOT IN ('s', 'S')
+						SET @Respuesta = 'El nombre cumple con las normas de codificación'
+						ELSE
+						SET @Respuesta = 'El nombre NO cumple con las normas de codificación'
+						RETURN @Respuesta
+END
+
 
 
 EXEC sp_VerificarNormasCodificacion 'DB_BaseOrigen'
