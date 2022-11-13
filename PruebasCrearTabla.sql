@@ -1,101 +1,5 @@
--------------------------------------------------------------------------------
-----------------		CREACION DE BASES DE DATOS		-----------------------
--------------------------------------------------------------------------------
-
-USE MASTER
-
-IF EXISTS(select * from sys.databases where name='DB_BaseOrigen')
-	DROP DATABASE DB_BaseOrigen
-GO
-
-IF EXISTS(select * from sys.databases where name='DB_BaseDestino')
-	DROP DATABASE DB_BaseDestino
-GO
-
-CREATE DATABASE DB_BaseOrigen;
-GO
-
-CREATE DATABASE DB_BaseDestino;
-GO
-
--------------------------------------------------------------------------------
-----------------		CREACION DE TABLAS Y DATOS		-----------------------
--------------------------------------------------------------------------------
-
-USE DB_BaseOrigen;
-GO
-CREATE SCHEMA Test;
-GO
-
-CREATE TABLE Test.Vehiculo (
-	AutoID INT IDENTITY(1,1) NOT NULL,
-	Modelo VARCHAR(30) NOT NULL,
-	Marca VARCHAR(30) NOT NULL,
-	CONSTRAINT PK_AutoID PRIMARY KEY (AutoID)
-	);
-GO
-CREATE TABLE Test.Dueño (
-	PersonaID INT IDENTITY(1,1) NOT NULL,
-	Nombre VARCHAR(30) NOT NULL,
-	Apellido VARCHAR(30) NOT NULL,
-	AutoID INT NOT NULL,
-	CONSTRAINT PK_PersonaID PRIMARY KEY (PersonaID),
-	CONSTRAINT FK_AutoID FOREIGN KEY (AutoID) REFERENCES Test.Vehiculo(AutoID)
-	);
-GO
-CREATE TABLE Errores (
-	Mensaje VARCHAR(MAX)
-	);
-
-
-INSERT INTO Test.Vehiculo (Modelo, Marca) VALUES ('Gol','VW'),('Onix','Chevrolet'),('208','Peugeot'),('Civic','Honda'),('Clio','Renault');
-GO
-INSERT INTO Test.Dueño (Nombre, Apellido,AutoID) VALUES ('Ezequiel','Sanson',1),('Nahuel','Saavedra',2),('Joel','Misterio',3),('Keko','Incognita',4),('Alexis','Quiensabe',5);
-GO
-
-USE DB_BaseDestino;
-GO
-CREATE SCHEMA Test;
-GO
-
-CREATE TABLE Test.Vehiculo (
-	AutoID INT IDENTITY(1,1) NOT NULL,
-	Modelo VARCHAR(30) NOT NULL,
-	Marca VARCHAR(30) NOT NULL,
-	CONSTRAINT PK_AutoID PRIMARY KEY (AutoID)
-	);
-GO
-
-
-INSERT INTO Test.Vehiculo (Modelo, Marca) VALUES ('Gol','VW'),('Onix','Chevrolet'),('208','Peugeot'),('Civic','Honda'),('Clio','Renault');
-GO
-
-
--------------------------------------------------------------------------------
---------------		CREACION DE VISTA PARA COMPARACION		-------------------
--------------------------------------------------------------------------------	
-
-CREATE VIEW Test.v_Vehiculo AS SELECT * FROM Test.Vehiculo
-GO
-
-CREATE VIEW Test.v_Dueño AS SELECT * FROM Test.Dueño
-GO
-
--------------------------------------------------------------------------------
-------------		CREACION DE VARIABLES Y PROCEDIMIENTOS		---------------
--------------------------------------------------------------------------------
-
-CREATE PROCEDURE sp_Compare(@BaseOrigen VARCHAR(30), @BaseDestino VARCHAR(30))
-AS
-	IF EXISTS(select * from sys.databases where name=@BaseOrigen)
-		RAISERROR('NO SE ENCUENTRA LA BDD ORIGEN',16,1)
-	ELSE IF EXISTS(select * from sys.databases where name=@BaseDestino)
-		RAISERROR('NO SE ENCUENTRA LA BDD DESTINO',16,1)
-	ELSE
-	------------------------------------------------------------------------------------------------------------------
-		BEGIN
-			--DECLARE @BaseOrigen VARCHAR(30)= 'DB_BaseOrigen';
-			--DECLARE @BaseDestino VARCHAR(30)= 'DB_BaseDestino';
+DECLARE @BaseOrigen VARCHAR(30)= 'DB_BaseOrigen';
+DECLARE @BaseDestino VARCHAR(30)= 'DB_BaseDestino';
 			DECLARE @Nombre_Tabla VARCHAR(500);
 			DECLARE @Schema VARCHAR(500);
 			declare @SchemaResult varchar(500) = '';
@@ -104,8 +8,8 @@ AS
 			DECLARE @SqlDinamico NVARCHAR(MAX)
 			DECLARE @SchemaQuery NVARCHAR(MAX);
 
-			--recorre las tablas de la bd 1 
-			SET @SqlDinamico = 'DECLARE Table_Cursor CURSOR FOR SELECT name FROM '+@BaseOrigen+'.sys.tables';
+--recorre las tablas de la bd 1 
+SET @SqlDinamico = 'DECLARE Table_Cursor CURSOR FOR SELECT name FROM '+@BaseOrigen+'.sys.tables';
 			EXECUTE SP_EXECUTESQL @sqlDinamico;
 				OPEN Table_Cursor;   
 					FETCH NEXT FROM Table_Cursor INTO @Nombre_Tabla; 
@@ -120,16 +24,13 @@ AS
 
 					FETCH NEXT FROM Table_Cursor INTO @Nombre_Tabla; 
 					END
-				CLOSE Table_Cursor;  
-				DEALLOCATE Table_Cursor;
-		END
-GO
-----------------------------------------------------------------------------------------------------
+			CLOSE Table_Cursor;  
+			DEALLOCATE Table_Cursor;
 
--------------------------------------------------------------------------------
-------------	CREACION DE PROCEDIMIENTO PARA COMPARAR TABLAS	---------------
--------------------------------------------------------------------------------
-	
+GO
+
+DROP PROCEDURE sp_CompareTables
+
 CREATE PROCEDURE sp_CompareTables @Nombre_Tabla VARCHAR(50),@BaseOrigen  VARCHAR(50), @BaseDestino VARCHAR(50), @Schema VARCHAR(50) = NULL
 AS
 DECLARE @Query_Base_Destino VARCHAR(50),
@@ -153,9 +54,9 @@ END
 
 	BEGIN TRY 
 		--Trato de ejecutar la query, si no existe devuelve error (pasa al bloque CATCH)
+		SELECT @Query_Base_Destino
 		EXEC SP_EXECUTESQL @Query_Base_Destino
 		EXEC sp_CompararCampos @Nombre_Tabla, @BaseDestino
-		FETCH NEXT FROM CursorColumnas INTO @Nombre_Columna, @Tipo_Columna, @Longitud;
 	END TRY
 	BEGIN CATCH
 		INSERT INTO Errores (mensaje) values ( 'La tabla ' + @Nombre_Tabla + ' no existe en ' + @BaseDestino)
@@ -205,10 +106,25 @@ END
 		DEALLOCATE CursorColumnas;
 	END CATCH
 
+--fin SP
 
--------------------------------------------------------------------------------
-------------	CREACION DE PROCEDIMIENTO PARA COMPARAR CAMPOS	---------------
--------------------------------------------------------------------------------
+EXEC sp_CompareTables 'Dueño', 'DB_BaseOrigen' ,'DB_BaseDestino', 'Test'
+
+SELECT * FROM DB_BaseDestino.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Vehiculo' AND COLUMN_NAME = 'hola'
+
+SELECT AutoID FROM DB_BaseDestino.Test.Vehiculo
+
+SELECT * FROM Information_Schema.Columns WHERE TABLE_NAME = 'Vehiculo'
+
+USE DB_BaseDestino
+SELECT *
+FROM Information_Schema.Columns
+WHERE TABLE_NAME = 'Vehiculo' AND TABLE_CATALOG = 'DB_BaseDestino'
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+DROP PROCEDURE sp_CompararCampos
+
 CREATE PROCEDURE sp_CompararCampos @Nombre_Tabla VARCHAR(50), @BaseDestino VARCHAR(50), @SchemaDestino VARCHAR(50) = NULL
 AS
 DECLARE @CursorCampos NVARCHAR(MAX),
@@ -256,19 +172,6 @@ EXECUTE SP_EXECUTESQL @CursorCampos;
 	DEALLOCATE CursorCampos;
 
 
--------------------------------------------------------------------------------
------------------------		EJECUCION		-----------------------------------
--------------------------------------------------------------------------------
+EXEC sp_CompararCampos 'Vehiculo', 'DB_BaseDestino';
 
---EXEC PROCEDURE sp_Compare 'DB_BaseOrigen', 'DB_BaseDestino';
-
-
-select * from sys.databases;
-
-SELECT * FROM DB_BaseDestino.sys.tables;
-SELECT * FROM DB_BaseOrigen.sys.tables;
-
-SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Vehiculo';
-
-SELECT * FROM DB_BaseDestino.INFORMATION_SCHEMA.COLUMNS;
-
+--ALTER TABLE Test.Vehiculo ADD test VARCHAR(50) NULL;
