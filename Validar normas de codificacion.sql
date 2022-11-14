@@ -103,5 +103,5 @@ IF SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS = UPPER(SUBSTRIN
 END
 
 
-
+--validar que no siga ejecutando si no existe la bbd
 EXEC sp_VerificarNormasCodificacion 'DB_BaseOrigen'
