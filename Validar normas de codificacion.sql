@@ -20,6 +20,8 @@ DECLARE @CursorTablas NVARCHAR(MAX)
 DECLARE @NombreTabla VARCHAR(500)
 DECLARE @NombreSchema VARCHAR(500)
 DECLARE @CursorCampos NVARCHAR(MAX)
+DECLARE @CursorProcedimientos NVARCHAR(MAX)
+DECLARE @CursorVistas NVARCHAR(MAX)
 DECLARE @NombreCampo VARCHAR(500)
 DECLARE @CursorUnique VARCHAR(500)
 DECLARE @NombreUnique VARCHAR(500)
@@ -60,6 +62,12 @@ DECLARE @ValidarNombreUnique VARCHAR(500)
 						CLOSE Campo_Cursor;  
 						DEALLOCATE Campo_Cursor;
 
+						/*SELECT ROUTINE_NAME FROM INFORMATION_SCHEMA.ROUTINES 
+						WHERE ROUTINE_TYPE = 'PROCEDURE'
+					    ORDER BY ROUTINE_NAME*/
+
+
+
 
 						-- sys.sp_helpindex me da los campos de los indices unique de una tabla, por eso guardo esa tabla en una variable del tipo tabla para luego recorrerlo con un cursor
 						
@@ -79,14 +87,40 @@ DECLARE @ValidarNombreUnique VARCHAR(500)
 						--DEALLOCATE Unique_Cursor;
 
 
-
-
-						
-
 				FETCH NEXT FROM Table_Cursor INTO @NombreTabla; 
 				END
 				CLOSE Table_Cursor;  
 				DEALLOCATE Table_Cursor;
+
+						SET @CursorProcedimientos =  'DECLARE Proc_Cursor CURSOR FOR SELECT ROUTINE_NAME FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE =''PROCEDURE'' ORDER BY ROUTINE_NAME';
+						EXECUTE SP_EXECUTESQL @CursorProcedimientos;
+						OPEN Proc_Cursor;  
+						FETCH NEXT FROM Proc_Cursor INTO @NombreCampo; 
+						WHILE @@FETCH_STATUS = 0 
+						BEGIN
+
+						SET @ValidarNotacionPascal = (dbo.f_verificar_procedures (@NombreCampo))
+						print ('Proc: ' +@NombreCampo + ' | ' + @ValidarNotacionPascal)
+
+						FETCH NEXT FROM Proc_Cursor INTO @NombreCampo; 
+						END
+						CLOSE Proc_Cursor;  
+						DEALLOCATE Proc_Cursor;
+
+						SET @CursorVistas =  'DECLARE View_Cursor CURSOR FOR SELECT name FROM sys.views';
+						EXECUTE SP_EXECUTESQL @CursorVistas;
+						OPEN View_Cursor;  
+						FETCH NEXT FROM View_Cursor INTO @NombreCampo; 
+						WHILE @@FETCH_STATUS = 0 
+						BEGIN
+
+						SET @ValidarNotacionPascal = (dbo.f_Verificar_Views (@NombreCampo))
+						print ('View: ' +@NombreCampo + ' | ' + @ValidarNotacionPascal)
+
+						FETCH NEXT FROM View_Cursor INTO @NombreCampo; 
+						END
+						CLOSE View_Cursor;  
+						DEALLOCATE View_Cursor;
 
 -- Función que verifica si el nombre empieza con mayúscula y es singular
 
@@ -95,13 +129,42 @@ RETURNS VARCHAR(500)
 AS
 BEGIN
 DECLARE @Respuesta VARCHAR(500)
+--print SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS;
 IF SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS = UPPER(SUBSTRING(@Nombre, 1,1)) COLLATE SQL_Latin1_General_CP1_CS_AS AND SUBSTRING(@Nombre, LEN(@Nombre), 1) NOT IN ('s', 'S')
 						SET @Respuesta = 'El nombre cumple con las normas de codificación'
 						ELSE
 						SET @Respuesta = 'El nombre NO cumple con las normas de codificación'
-						RETURN @Respuesta
+						RETURN @Respuesta + ' ' + SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS;
+END
+
+CREATE FUNCTION f_Verificar_Procedures(@Proc VARCHAR (500))
+RETURNS VARCHAR(500)
+AS
+BEGIN
+DECLARE @Respuesta VARCHAR(500)
+--print SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS;
+IF SUBSTRING(@Proc, 1,3) COLLATE SQL_Latin1_General_CP1_CS_AS in ('sp_', 'SP_','sP_','Sp_')
+						SET @Respuesta = 'El procedimiento cumple con las normas de codificación'
+						ELSE
+						SET @Respuesta = 'El procedimiento NO cumple con las normas de codificación'
+						RETURN @Respuesta;
+END
+
+CREATE FUNCTION f_Verificar_Views(@View VARCHAR (500))
+RETURNS VARCHAR(500)
+AS
+BEGIN
+DECLARE @Respuesta VARCHAR(500)
+--print SUBSTRING(@Nombre, 1,1) COLLATE SQL_Latin1_General_CP1_CS_AS;
+IF SUBSTRING(@View, 1,2) COLLATE SQL_Latin1_General_CP1_CS_AS in ('v_', 'V_')
+						SET @Respuesta = 'La vista cumple con las normas de codificación'
+						ELSE
+						SET @Respuesta = 'La vista NO cumple con las normas de codificación'
+						RETURN @Respuesta;
 END
 
 
 --validar que no siga ejecutando si no existe la bbd
 EXEC sp_VerificarNormasCodificacion 'DB_BaseOrigen'
+EXEC sp_stored_procedures; 
+
