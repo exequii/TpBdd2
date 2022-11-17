@@ -22,6 +22,7 @@ DECLARE @NombreSchema VARCHAR(500)
 DECLARE @CursorCampos NVARCHAR(MAX)
 DECLARE @CursorProcedimientos NVARCHAR(MAX)
 DECLARE @CursorVistas NVARCHAR(MAX)
+DECLARE @CursorConstraint NVARCHAR(MAX)
 DECLARE @NombreCampo VARCHAR(500)
 DECLARE @CursorUnique VARCHAR(500)
 DECLARE @NombreUnique VARCHAR(500)
@@ -66,11 +67,7 @@ DECLARE @ValidarNombreUnique VARCHAR(500)
 						WHERE ROUTINE_TYPE = 'PROCEDURE'
 					    ORDER BY ROUTINE_NAME*/
 
-
-
-
 						-- sys.sp_helpindex me da los campos de los indices unique de una tabla, por eso guardo esa tabla en una variable del tipo tabla para luego recorrerlo con un cursor
-						
 						
 						--INSERT INTO @TablaIndexs EXEC sys.sp_helpindex 'Test.Dueño' 
 						--DECLARE Unique_Cursor CURSOR FOR SELECT index_name from @TablaIndexs
@@ -122,6 +119,22 @@ DECLARE @ValidarNombreUnique VARCHAR(500)
 						CLOSE View_Cursor;  
 						DEALLOCATE View_Cursor;
 
+						SET @CursorConstraint = 'DECLARE Constraint_Cursor CURSOR FOR SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS';
+						EXECUTE SP_EXECUTESQL @CursorConstraint;
+						OPEN Constraint_Cursor;  
+						FETCH NEXT FROM Constraint_Cursor INTO @NombreCampo; 
+						WHILE @@FETCH_STATUS = 0 
+						BEGIN
+
+						SET @ValidarNotacionPascal = (dbo.f_Verificar_Constraint(@NombreCampo))
+						print ('Key: ' +@NombreCampo + ' | ' + @ValidarNotacionPascal)
+
+						FETCH NEXT FROM Constraint_Cursor INTO @NombreCampo; 
+						END
+						CLOSE Constraint_Cursor;  
+						DEALLOCATE Constraint_Cursor;
+
+
 -- Función que verifica si el nombre empieza con mayúscula y es singular
 
 CREATE FUNCTION f_Verificar_Notacion_Pascal(@Nombre VARCHAR (500))
@@ -163,8 +176,29 @@ IF SUBSTRING(@View, 1,2) COLLATE SQL_Latin1_General_CP1_CS_AS in ('v_', 'V_')
 						RETURN @Respuesta;
 END
 
+CREATE FUNCTION f_Verificar_Constraint(@Constraint VARCHAR (500))
+RETURNS VARCHAR(500)
+AS
+BEGIN
+DECLARE @Respuesta VARCHAR(500)
+IF SUBSTRING(@Constraint, 1,3) COLLATE SQL_Latin1_General_CP1_CS_AS in ('pk_', 'PK_','fk_','FK_')
+						SET @Respuesta = 'La key cumple con las normas de codificación'
+						ELSE
+						SET @Respuesta = 'La key NO cumple con las normas de codificación'
+						RETURN @Respuesta;
+END
+
 
 --validar que no siga ejecutando si no existe la bbd
 EXEC sp_VerificarNormasCodificacion 'DB_BaseOrigen'
 EXEC sp_stored_procedures; 
 
+SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Vehiculo'
+
+select * from sys.key_constraints
+
+SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+
+SELECT CONSTRAINT_TYPE, CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+WHERE TABLE_NAME = @NombreTabla AND CONSTRAINT_NAME =
+SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_NAME = 'Dueño' AND CONSTRAINT_NAME
